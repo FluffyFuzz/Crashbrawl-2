@@ -1,0 +1,144 @@
+local Debris 		= game:GetService("Debris")
+local HealthEvent 	= game:GetService("ServerScriptService").CarHealthUpdate
+
+local CarCollision 	= script.Parent
+local Health 		= script.Parent.CarStats.Health.Value
+local Strength 		= script.Parent.CarStats.Strength.Value
+local Defense 		= script.Parent.CarStats.Defense.Value
+local Status 		= script.Parent.CarStats.Alive.Value
+
+local Sparks1 		= script.Parent.Sparks1
+local Sparks2 		= script.Parent.Sparks2
+local Impact1 		= script.Parent.Impact1
+local Impact2 		= script.Parent.Impact2
+local Impact3 		= script.Parent.Impact3
+local Impact4 		= script.Parent.Impact4
+local Impact5 		= script.Parent.Impact5
+local Yodel			= script.Parent.Yodel
+local Horn			= script.Parent.Horn
+local Hit1			= script.Parent.Hit1
+local Hit2			= script.Parent.Hit2
+local Hit3			= script.Parent.Hit3
+local Hit4			= script.Parent.Hit4
+local Glass1		= script.Parent.Glass1
+local Glass2		= script.Parent.Glass2
+local DoorSlam1		= script.Parent.DoorSlam1
+local DoorSlam2		= script.Parent.DoorSlam2
+local CImpacts 		= {Impact1, Impact2, Impact3, Impact4, Impact5}
+local HImpacts 		= {Yodel, Horn, Hit1, Hit2, Hit3, Hit4, Glass1, Glass2, DoorSlam1, DoorSlam2}
+
+function Knockback(objecthit,multiplier)
+	local Force = CarCollision.Velocity.Magnitude*multiplier
+
+	local Knockback = Instance.new("BodyVelocity")
+	Knockback.P = 1200
+	Knockback.MaxForce = Vector3.new(math.huge,math.huge,math.huge)
+	Knockback.Velocity = CarCollision.CFrame.LookVector*Force
+	Knockback.Parent = objecthit
+
+	Debris:AddItem(Knockback, .01)
+end
+
+function CarDamage(objecthit)
+	objecthit.Crash.Disabled = true
+
+	local CollisionDamage = CarCollision.Velocity.Magnitude*(Strength)/2.5
+	print("Damage =", CollisionDamage)
+
+	objecthit.CarStats.Health.Value = objecthit.CarStats.Health.Value-(CollisionDamage/Defense)
+	Knockback(objecthit.Parent.Parent:FindFirstChild("DriveSeat"), 5)
+	HealthEvent:Fire()
+
+	CImpacts[math.random(1, #CImpacts)]:Play()
+	HImpacts[math.random(1, #HImpacts)]:Play()
+	Sparks1:Emit(200)
+	Sparks2:Emit(200)
+
+	wait(.5)
+	script.Disabled = false
+	objecthit.Crash.Disabled = false
+end
+
+function HumanoidDamage(objecthit, humanoid)
+	if humanoid.Sit == true then
+		if humanoid.SeatPart.Name == "DriveSeat" then
+			CarDamage(humanoid.SeatPart.Parent.Body.CarCollision)
+		else
+			local CollisionDamage = CarCollision.Velocity.Magnitude*(Strength)/2.5
+
+			CImpacts[math.random(1, #CImpacts)]:Play()
+			HImpacts[math.random(1, #HImpacts)]:Play()
+			Sparks1:Emit(200)
+			Sparks2:Emit(200)
+
+			humanoid:TakeDamage(CollisionDamage)
+			Knockback(objecthit,5)
+			humanoid.PlatformStand = true
+			delay(1, function()
+				humanoid.PlatformStand = false
+			end)
+		end
+	elseif humanoid.Sit == false then
+		local CollisionDamage = CarCollision.Velocity.Magnitude*(Strength)/2.5
+
+		CImpacts[math.random(1, #CImpacts)]:Play()
+		HImpacts[math.random(1, #HImpacts)]:Play()
+		Sparks1:Emit(200)
+		Sparks2:Emit(200)
+
+		humanoid:TakeDamage(CollisionDamage)
+		Knockback(objecthit,5)
+		humanoid.PlatformStand = true
+		delay(1, function()
+			humanoid.PlatformStand = false
+		end)
+
+		wait(.25)
+		script.Disabled = false
+	end
+end
+
+function crashed(ObjectHit)
+	if CarCollision.Velocity.Magnitude > ObjectHit.Velocity.Magnitude + 15 and ObjectHit.CanTouch == true and ObjectHit.Name ~= "FL" and ObjectHit.Name ~= "FR" and ObjectHit.Name ~= "RL" and ObjectHit.Name ~= "RR" then
+		print(ObjectHit)
+		script.Disabled = true
+		wait()
+
+		local Name = ObjectHit.Name
+
+		if Status==true then
+
+			if ObjectHit.Name == "Handle" then
+				script.Disabled = false
+				return
+			end
+
+			if ObjectHit.Name == "DriveSeat" then
+				CarDamage(ObjectHit.Parent.Body.CarCollision)
+				return
+			end
+
+			if ObjectHit.Parent:FindFirstChild("Humanoid") then
+				local PlayerHumanoid = ObjectHit.Parent:FindFirstChild("Humanoid")
+
+				HumanoidDamage(ObjectHit,PlayerHumanoid)
+				return
+
+			elseif ObjectHit.Name == "CarCollision" then
+				CarDamage(ObjectHit)
+				return
+			end
+
+			CImpacts[math.random(1, #CImpacts)]:Play()
+			HImpacts[math.random(1, #HImpacts)]:Play()
+			Sparks1:Emit(200)
+			Sparks2:Emit(200)
+
+			wait(.25)
+			script.Disabled = false
+		end
+	end
+end
+
+
+CarCollision.Touched:connect(crashed)
