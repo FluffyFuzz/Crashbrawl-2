@@ -1,0 +1,34 @@
+local Debris 			= game:GetService("Debris")
+local HealthEvent 		= game:GetService("ServerScriptService").CarHealthUpdate
+local startinghealth 	= script.Parent.CarStats.Health.Value
+
+HealthEvent.Event:Connect(function()
+	if script.Parent.CarStats.Health.Value <= startinghealth*0.75 and script.Parent.CarStats.Alive.Value==true then
+
+		script.Parent.Engine.Smoke.Enabled = true
+
+		if script.Parent.CarStats.Health.Value <= startinghealth*0.25 and script.Parent.CarStats.Alive.Value==true then 
+
+			script.Parent.Engine.Sparks.Enabled = true
+			script.Parent.Light.FireLight.Enabled = true
+			script.Parent.Engine.Fire.Enabled = true
+			script.Parent.Engine.Fire2.Enabled = true
+			script.Parent.Engine.FireSound:Play()
+
+			if script.Parent.CarStats.Health.Value <= 0 and script.Parent.CarStats.Alive.Value==true then
+
+				script.Parent.CarStats.Alive.Value=false
+				script.Parent.Parent.Parent.DriveSeat.Disabled = true
+
+				script.Parent.Engine.Explosion1:Play()
+				game.Workspace.Sounds.CrowdCheer:Play()
+
+				script.Enabled = false
+				script.Parent.Crash.Enabled = false
+
+				script.Parent.CanCollide = true
+				Debris:AddItem(script.Parent.Parent.Parent.Wheels, .01)
+			end
+		end
+	end
+end)
